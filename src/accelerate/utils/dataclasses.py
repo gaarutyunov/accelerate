@@ -436,8 +436,8 @@ class DeepSpeedPlugin:
     """
     This plugin is used to integrate DeepSpeed.
     """
-    multiprocessing_context: str = field(
-        default=None, metadata={"help": "Multiprocessing context for dataloader"}
+    training_data_params: Any = field(
+        default=None, metadata={"help": "Params for :meth:`~deepspeed.runtime.engine.DeepSpeedEngine.deepspeed_io`"}
     )
     hf_ds_config: Any = field(
         default=None,

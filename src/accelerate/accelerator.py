@@ -1420,8 +1420,8 @@ class Accelerator:
             if collate_fn is not None:
                 kwargs["collate_fn"] = collate_fn
 
-            if hasattr(deepspeed_plugin, "multiprocessing_context"):
-                kwargs["multiprocessing_context"] = deepspeed_plugin.multiprocessing_context
+            if hasattr(deepspeed_plugin, "training_data_params"):
+                kwargs["training_data_params"] = deepspeed_plugin.training_data_params
 
             engine, optimizer, training_dataloader, lr_scheduler = deepspeed.initialize(**kwargs)
             if optimizer is not None:
