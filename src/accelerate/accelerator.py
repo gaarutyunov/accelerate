@@ -1262,7 +1262,7 @@ class Accelerator:
         deepspeed_plugin = self.state.deepspeed_plugin
 
         is_dataloader_present = any(isinstance(obj, torch.utils.data.DataLoader) for obj in args)
-        if deepspeed_plugin.deepspeed_config["train_micro_batch_size_per_gpu"] == "auto" or is_dataloader_present:
+        if deepspeed_plugin.deepspeed_config["train_micro_batch_size_per_gpu"] == "auto" and is_dataloader_present:
             result = [
                 self._prepare_one(obj, first_pass=True) if isinstance(obj, torch.utils.data.DataLoader) else obj
                 for obj in args
@@ -1306,6 +1306,7 @@ class Accelerator:
         model = None
         optimizer = None
         scheduler = None
+        data_loader = None
         for obj in result:
             if isinstance(obj, torch.nn.Module):
                 model = obj
@@ -1315,6 +1316,8 @@ class Accelerator:
                 type(obj).__name__ in deepspeed.runtime.lr_schedules.VALID_LR_SCHEDULES
             ):
                 scheduler = obj
+            elif isinstance(obj, torch.utils.data.DataLoader):
+                data_loader = obj
 
         if optimizer is not None:
             if "optimizer" in deepspeed_plugin.deepspeed_config and not isinstance(optimizer, (DummyOptim)):
@@ -1404,7 +1407,20 @@ class Accelerator:
                         if type(scheduler).__name__ in deepspeed.runtime.lr_schedules.VALID_LR_SCHEDULES:
                             kwargs["lr_scheduler"] = scheduler
 
-            engine, optimizer, _, lr_scheduler = deepspeed.initialize(**kwargs)
+            training_data = None
+            collate_fn = None
+
+            if data_loader is not None:
+                training_data = data_loader.dataset
+                collate_fn = data_loader.collate_fn
+
+            if training_data is not None:
+                kwargs["training_data"] = training_data
+
+            if collate_fn is not None:
+                kwargs["collate_fn"] = collate_fn
+
+            engine, optimizer, training_dataloader, lr_scheduler = deepspeed.initialize(**kwargs)
             if optimizer is not None:
                 optimizer = DeepSpeedOptimizerWrapper(optimizer)
             if scheduler is not None:
@@ -1427,6 +1443,8 @@ class Accelerator:
                     type(result[i]).__name__ in deepspeed.runtime.lr_schedules.VALID_LR_SCHEDULES
                 ):
                     result[i] = scheduler
+                elif isinstance(result[i], torch.utils.data.DataLoader):
+                    result[i] = training_dataloader
             # pointing for deepspeed_engine_wrapped.backward()
             self.deepspeed_engine_wrapped = DeepSpeedEngineWrapper(engine)
             self._models.append(engine)
