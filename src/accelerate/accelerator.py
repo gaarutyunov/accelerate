@@ -1423,6 +1423,9 @@ class Accelerator:
             if hasattr(deepspeed_plugin, "training_data_params"):
                 kwargs["training_data_params"] = deepspeed_plugin.training_data_params
 
+            if hasattr(deepspeed_plugin, "requires_grad_special_cases"):
+                kwargs["requires_grad_special_cases"] = deepspeed_plugin.requires_grad_special_cases
+
             engine, optimizer, training_dataloader, lr_scheduler = deepspeed.initialize(**kwargs)
             if optimizer is not None:
                 optimizer = DeepSpeedOptimizerWrapper(optimizer)
