@@ -436,7 +436,7 @@ class DeepSpeedPlugin:
     """
     This plugin is used to integrate DeepSpeed.
     """
-    requires_grad_special_cases: Dict[int, bool] = field(
+    requires_grad_special_cases: Dict[str, bool] = field(
         default=None, metadata={"help": "Dictionary with special cases for gradients"}
     )
     training_data_params: Any = field(
